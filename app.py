@@ -3,7 +3,7 @@ import sys
 
 from PySide6 import QtCore, QtWidgets, QtGui
 
-from settings import BASE_DIR
+from settings import BASE_DIR, INVOICE_TYPES
 from threads import WorkerThread
 
 
@@ -14,6 +14,10 @@ class MainForm(QtWidgets.QWidget):
         self.setWindowTitle("PDF Split")
 
         # Create widgets
+        self.invoice_type = QtWidgets.QComboBox()
+        for invoice in INVOICE_TYPES:
+            self.invoice_type.addItem(invoice)
+
         self.folder_path = QtWidgets.QLineEdit("Folder location where to read pdf files")
         self.folder_path.setEnabled(False)
         #self.folder_path.setFixedWidth(250)
@@ -49,6 +53,7 @@ class MainForm(QtWidgets.QWidget):
 
         # Create layout and add widgets
         layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(self.invoice_type)
         layout.addWidget(self.folder_path)
         layout.addWidget(self.button_folder_path_dialog)
         layout.addWidget(self.store_path)
@@ -65,9 +70,10 @@ class MainForm(QtWidgets.QWidget):
     def start_pdf_split(self):
         folder_path = self.folder_path.text()
         store_path = self.store_path.text()
+        invoice_type = self.invoice_type.currentText()
 
         if os.path.isdir(folder_path) and os.path.isdir(store_path):
-            instanced_thread = WorkerThread(self, folder_path, store_path)
+            instanced_thread = WorkerThread(self, folder_path, store_path, invoice_type)
             instanced_thread.start()
         else:
             self.msg.show()

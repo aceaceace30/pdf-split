@@ -9,13 +9,14 @@ class MySignals(QObject):
 
 
 class WorkerThread(QThread):
-    def __init__(self, parent, folder_path, store_path):
+    def __init__(self, parent, folder_path, store_path, invoice_type):
         QThread.__init__(self, parent)
         # Instantiate signals and connect signals to the slots
         self.signals = MySignals()
         self.signals.signal_str.connect(parent.update_progress)
         self.folder_path = folder_path
         self.store_path = store_path
+        self.invoice_type = invoice_type
         self.parent = parent
 
     def run(self):
@@ -28,7 +29,7 @@ class WorkerThread(QThread):
             if not f.endswith('.pdf'):
                 continue
             file_path = os.path.join(self.folder_path, f)
-            split_pdf(file_path, self.store_path, self.signals)
+            split_pdf(self.invoice_type, file_path, self.store_path, self.signals)
             # Emit signals whenever you want
             # self.signals.signal_str.emit(f)
         self.signals.signal_str.emit(f'Finished splitting all files on {self.folder_path}')
