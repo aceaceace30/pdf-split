@@ -1,4 +1,3 @@
-import os
 import shutil
 import cv2
 import numpy as np
@@ -7,7 +6,7 @@ from PyPDF2 import PdfFileReader, PdfFileWriter
 from pytesseract import pytesseract, Output
 from pdf2image import convert_from_path
 from settings import *
-from utils.validations import (
+from validations import (
     valid_total_value, valid_date_value, valid_po_num_value, valid_page_value
 )
 
@@ -88,14 +87,34 @@ def get_file_name(invoice_type, image_path):
             for idx, text in enumerate(texts):
                 if not text:
                     continue
+                # print(idx, text)
+                split_text = text.split('/')
                 if "Cust. PO#" in text and not po_txt:
                     po_txt = valid_po_num_value(texts[idx+4])
-                elif len(text.split('/')) == 3 and not date_txt:
-                    date_txt = text.replace('/', '-')
+                    if not po_txt:
+                        for i in range(1, 3):
+                            try:
+                                next_text = texts[idx+i]
+                                if next_text.replace(' ', '').isalpha():
+                                    po_txt = next_text
+                                else:
+                                    po_txt = next_text.split(' ')[-2]
+                                    if po_txt:
+                                        po_txt = valid_po_num_value(po_txt)
+                                break
+                            except IndexError:
+                                continue
+                elif idx <= 45 and len(split_text) == 3 and not date_txt:
+                    month = split_text[0].split(' ')[-1]
+                    day = split_text[1]
+                    year = split_text[2].split(' ')[0]
+                    date_txt = f'{month}-{day}-{year}'
+                    # date_txt = text.replace('/', '-')
                 elif "INVOICE TOTAL" in text and not total_txt:
                     total_txt = valid_total_value(text)
 
         print(f'Retry: {retry_count}/{retry_max}', 'Details:', po_txt, date_txt, total_txt, last_page_txt)
+        print('------------------------------------------------------')
         if po_txt and date_txt and total_txt:
             total_txt = f'${total_txt}'
             return True, 1, f'{po_txt} - {date_txt} - {total_txt}'
