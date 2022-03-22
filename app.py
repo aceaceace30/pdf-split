@@ -92,7 +92,6 @@ class MainForm(QtWidgets.QWidget):
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
-    app.setWindowIcon(QtGui.QIcon(os.path.join(BASE_DIR, 'pdf-split-icon.png')))
     main_form = MainForm()
     main_form.resize(450, 300)
     main_form.show()
