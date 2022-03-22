@@ -11,11 +11,11 @@ from validations import (
 )
 
 
-def modify_image(img, additional_black_threshold, retry_count):
-    if retry_count == 2:
+def modify_image(img, additional_black_threshold, try_count):
+    if try_count == 2:
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         img = cv2.erode(img, np.ones((1, 1), np.uint8))
-    elif retry_count > 2:
+    elif try_count > 2:
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         # Remove shadows, cf. https://stackoverflow.com/a/44752405/11089932
         dilated_img = cv2.dilate(img, np.ones((7, 7), np.uint8))
@@ -44,18 +44,18 @@ def get_file_name(invoice_type, image_path):
     identifiers = [po_identifier, date_identifier, page_identifier] + total_identifiers
 
     img = cv2.imread(image_path)
+    try_count = 1
     retry_max = 3
+    additional_black_threshold = 0
 
     if invoice_type == NAPA_MOTOR_PARTS:
         retry_max = 10
         width, height = (2550, 3300)
         img = cv2.resize(img, (width, height))
 
-    retry_count = 1
-    additional_black_threshold = 0
     po_txt, date_txt, total_txt, last_page_txt = '', '', '', ''
     while True:
-        modified_img = modify_image(img, additional_black_threshold, retry_count)
+        modified_img = modify_image(img, additional_black_threshold, try_count)
         extracted_text = extract_text(modified_img, invoice_type)
         if invoice_type == NAPA_MOTOR_PARTS:
             texts = list()
@@ -113,16 +113,16 @@ def get_file_name(invoice_type, image_path):
                 elif "INVOICE TOTAL" in text and not total_txt:
                     total_txt = valid_total_value(text)
 
-        print(f'Retry: {retry_count}/{retry_max}', 'Details:', po_txt, date_txt, total_txt, last_page_txt)
+        print(f'Retry: {try_count}/{retry_max}', 'Details:', po_txt, date_txt, total_txt, last_page_txt)
         print('------------------------------------------------------')
         if po_txt and date_txt and total_txt:
             total_txt = f'${total_txt}'
             return True, 1, f'{po_txt} - {date_txt} - {total_txt}'
-        elif retry_count == retry_max:
+        elif try_count == retry_max:
             return False, last_page_txt, f'{po_txt} - {date_txt} - {total_txt}'
         else:
             additional_black_threshold += 10
-            retry_count += 1
+            try_count += 1
 
 
 def convert_pdf_to_image(pdf_file_path, image_path):
@@ -198,6 +198,7 @@ def split_pdf(invoice_type, file_path, store_path, signals):
             os.remove(move_dir)
         os.rename(pdf_file_path, move_dir)
         signals.signal_str.emit(f'{invoice_type}: {page_num} out of {main_pdf.numPages} in {main_pdf_filename}.pdf')
+        print('Finished...')
 
     try:
         shutil.rmtree(image_path)
