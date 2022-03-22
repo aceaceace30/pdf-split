@@ -32,6 +32,7 @@ class WorkerThread(QThread):
             split_pdf(self.invoice_type, file_path, self.store_path, self.signals)
             # Emit signals whenever you want
             # self.signals.signal_str.emit(f)
+        print('Finished...')
         self.signals.signal_str.emit(f'Finished splitting all files on {self.folder_path}')
         self.toggle_fields(True)
         self.parent.start_button.setText("Start")

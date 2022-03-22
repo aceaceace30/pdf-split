@@ -198,7 +198,6 @@ def split_pdf(invoice_type, file_path, store_path, signals):
             os.remove(move_dir)
         os.rename(pdf_file_path, move_dir)
         signals.signal_str.emit(f'{invoice_type}: {page_num} out of {main_pdf.numPages} in {main_pdf_filename}.pdf')
-        print('Finished...')
 
     try:
         shutil.rmtree(image_path)
