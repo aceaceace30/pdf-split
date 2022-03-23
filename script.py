@@ -109,6 +109,8 @@ def get_file_name(invoice_type, image_path):
                     if len(month) == 1:
                         month = f'0{month}'
                     day = split_text[1]
+                    if len(day) == 1:
+                        day = f'0{day}'
                     year = split_text[2].split(' ')[0]
                     date_txt = f'{month}-{day}-{year}'
                     # date_txt = text.replace('/', '-')
