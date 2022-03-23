@@ -106,6 +106,8 @@ def get_file_name(invoice_type, image_path):
                                 continue
                 elif idx <= 45 and len(split_text) == 3 and not date_txt:
                     month = split_text[0].split(' ')[-1]
+                    if len(month) == 1:
+                        month = f'0{month}'
                     day = split_text[1]
                     year = split_text[2].split(' ')[0]
                     date_txt = f'{month}-{day}-{year}'
