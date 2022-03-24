@@ -6,8 +6,8 @@ from PyPDF2 import PdfFileReader, PdfFileWriter
 from pytesseract import pytesseract, Output
 from pdf2image import convert_from_path
 from settings import *
-from validations import (
-    valid_total_value, valid_date_value, valid_po_num_value, valid_page_value
+from utils import (
+    clean_total, clean_date, clean_po_num, clean_page
 )
 
 
@@ -37,12 +37,6 @@ def extract_text(img, invoice_type):
 
 
 def get_file_name(invoice_type, image_path):
-    po_identifier = 'PO#:'
-    date_identifier = 'Date:'
-    total_identifiers = ['Memo', 'Sale', 'Subtotal', 'Total']
-    page_identifier = 'Page:'
-    identifiers = [po_identifier, date_identifier, page_identifier] + total_identifiers
-
     img = cv2.imread(image_path)
     try_count = 1
     retry_max = 3
@@ -58,9 +52,20 @@ def get_file_name(invoice_type, image_path):
         modified_img = modify_image(img, additional_black_threshold, try_count)
         extracted_text = extract_text(modified_img, invoice_type)
         if invoice_type == NAPA_MOTOR_PARTS:
+            po_identifier = 'PO#:'
+            date_identifier = 'Date:'
+            total_identifiers = ['Memo', 'Sale', 'Subtotal', 'Total']
+            page_identifier = 'Page:'
+            is_credit_memo = False
+            identifiers = [po_identifier, date_identifier, page_identifier] + total_identifiers
+
             texts = list()
             for idx, t in enumerate(extracted_text):
                 strip_text = t.strip()
+                if is_credit_memo is False and strip_text == 'Credit':
+                    if extracted_text[idx+1] == 'Memo':
+                        is_credit_memo = True
+
                 if strip_text and strip_text in identifiers:
                     try:
                         next_text = extracted_text[idx+1].strip()
@@ -72,25 +77,27 @@ def get_file_name(invoice_type, image_path):
             if len(texts) >= 4:
                 for text in texts:
                     if page_identifier in text and not last_page_txt:
-                        last_page_txt = valid_page_value(text.replace(page_identifier, ''))
+                        last_page_txt = clean_page(text.replace(page_identifier, ''))
                     elif po_identifier in text and not po_txt:
-                        po_txt = valid_po_num_value(text.replace(po_identifier, ''))
+                        po_txt = clean_po_num(text.replace(po_identifier, ''))
                     elif date_identifier in text and not date_txt:
-                        date_txt = valid_date_value(text.replace(date_identifier, ''))
+                        date_txt = clean_date(text.replace(date_identifier, ''), invoice_type)
                     else:
                         for identifier in total_identifiers:
                             if identifier in text and not total_txt:
-                                total_txt = valid_total_value(text)
+                                total_txt = clean_total(text, is_credit_memo)
                                 break
         else:
-            texts = extracted_text.split("\n")
+            po_identifier = 'Cust. PO#'
+            total_identifier = 'INVOICE TOTAL'
+            texts = extracted_text.split('\n')
             for idx, text in enumerate(texts):
                 if not text:
                     continue
                 # print(idx, text)
                 split_text = text.split('/')
-                if "Cust. PO#" in text and not po_txt:
-                    po_txt = valid_po_num_value(texts[idx+4])
+                if po_identifier in text and not po_txt:
+                    po_txt = clean_po_num(texts[idx + 4])
                     if not po_txt:
                         for i in range(1, 3):
                             try:
@@ -100,22 +107,14 @@ def get_file_name(invoice_type, image_path):
                                 else:
                                     po_txt = next_text.split(' ')[-2]
                                     if po_txt:
-                                        po_txt = valid_po_num_value(po_txt)
+                                        po_txt = clean_po_num(po_txt)
                                 break
                             except IndexError:
                                 continue
                 elif idx <= 45 and len(split_text) == 3 and not date_txt:
-                    month = split_text[0].split(' ')[-1]
-                    if len(month) == 1:
-                        month = f'0{month}'
-                    day = split_text[1]
-                    if len(day) == 1:
-                        day = f'0{day}'
-                    year = split_text[2].split(' ')[0]
-                    date_txt = f'{month}-{day}-{year}'
-                    # date_txt = text.replace('/', '-')
-                elif "INVOICE TOTAL" in text and not total_txt:
-                    total_txt = valid_total_value(text)
+                    date_txt = clean_date(split_text, invoice_type)
+                elif total_identifier in text and not total_txt:
+                    total_txt = clean_total(text)
 
         print(f'Retry: {try_count}/{retry_max}', 'Details:', po_txt, date_txt, total_txt, last_page_txt)
         print('------------------------------------------------------')
@@ -166,10 +165,6 @@ def split_pdf(invoice_type, file_path, store_path, signals):
                 multi_pdf = PdfFileReader(open(included_pdf, 'rb'))
                 output.addPage(multi_pdf.getPage(0))
         output.addPage(main_pdf.getPage(i))
-
-        # Skip if this page is not the last page of the multiple pages
-        # if multi_page_scope != 0 and multi_page_scope < i:
-        #     continue
 
         initial_file_name = f'page{page_num}.pdf'
         pdf_file_path = os.path.join(holder_folder_path, initial_file_name)
