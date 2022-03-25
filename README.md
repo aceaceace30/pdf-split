@@ -15,7 +15,7 @@ This project is used to split the pdf files and locate the details needed to pro
 ### Running the application:
 - Download the poppler and tesseract-ocr on the official website
 - Create a folder on the root of project named `dependencies`
-- Extract the poppler and tesseract-ocr folders to the `dependencies folder`
+- Extract the poppler and tesseract-ocr folders to the `dependencies` folder
 - Run -> pip install -r requirements.txt
 - Run -> python app.py
 
