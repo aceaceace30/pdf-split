@@ -1,9 +1,9 @@
 import os
 import sys
 
-from PySide6 import QtCore, QtWidgets, QtGui
+from PySide6 import QtCore, QtWidgets
 
-from settings import BASE_DIR, INVOICE_TYPES
+from settings import INVOICE_TYPES
 from threads import WorkerThread
 
 
