@@ -45,7 +45,7 @@ def clean_date(text, invoice_type):
 def clean_po_num(text):
     """Cleans the PO # text"""
     if text and len(text) > 2:
-        if text.isalpha():  # Check if all are letters
+        if text.replace(' ', '').isalpha():  # Check if all are letters
             return text
         elif text.isalnum():  # Check if it is combination of letters and numbers
             # Check if the 1st two characters are both letter

@@ -65,14 +65,19 @@ def get_file_name(invoice_type, image_path):
                 if is_credit_memo is False and strip_text == 'Credit':
                     if extracted_text[idx+1] == 'Memo':
                         is_credit_memo = True
-
                 if strip_text and strip_text in identifiers:
                     try:
                         next_text = extracted_text[idx+1].strip()
                     except IndexError:
                         next_text = ''
+                    try:
+                        next_text2 = extracted_text[idx + 2].strip()
+                    except IndexError:
+                        next_text2 = ''
                     combined_text = f'{strip_text + next_text}'
                     if combined_text not in texts and next_text:
+                        if next_text2:
+                            combined_text += f' {next_text2}'
                         texts.append(combined_text)
             if len(texts) >= 4:
                 for text in texts:
@@ -121,6 +126,8 @@ def get_file_name(invoice_type, image_path):
         print('------------------------------------------------------')
         if po_txt and date_txt and total_txt:
             total_txt = f'${total_txt}'
+            if ' ' in po_txt:
+                po_txt = po_txt.title().replace(' ', '')
             return True, 1, f'{po_txt} - {date_txt} - {total_txt}'
         elif try_count == retry_max:
             return False, last_page_txt, f'{po_txt} - {date_txt} - {total_txt}'
