@@ -14,7 +14,7 @@ def clean_total(text, is_credit_memo=False):
         return ''
     elif '.' in total_txt:
         # print('Total', total_txt)
-        if is_credit_memo:
+        if is_credit_memo or total_txt.startswith('-'):
             total_txt = f'{total_txt} - REFUND'
         return total_txt
     return ''

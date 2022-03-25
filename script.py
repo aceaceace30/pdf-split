@@ -114,7 +114,8 @@ def get_file_name(invoice_type, image_path):
                 elif idx <= 45 and len(split_text) == 3 and not date_txt:
                     date_txt = clean_date(split_text, invoice_type)
                 elif total_identifier in text and not total_txt:
-                    total_txt = clean_total(text)
+                    is_credit_memo = bool(not total_txt.startswith('-'))
+                    total_txt = clean_total(text, is_credit_memo)
 
         print(f'Retry: {try_count}/{retry_max}', 'Details:', po_txt, date_txt, total_txt, last_page_txt)
         print('------------------------------------------------------')
@@ -155,6 +156,7 @@ def split_pdf(invoice_type, file_path, store_path, signals):
     main_pdf = PdfFileReader(open(file_path, 'rb'))
     multi_page_scope = 0
     multi_page_idx = list()
+    pdf_file_names = list()
     for i in range(main_pdf.numPages):
         page_num = i + 1
         output = PdfFileWriter()
@@ -173,7 +175,9 @@ def split_pdf(invoice_type, file_path, store_path, signals):
 
         image_file_path = convert_pdf_to_image(pdf_file_path, image_path)
         is_success, page_count, pdf_file_name = get_file_name(invoice_type, image_file_path)
-
+        while pdf_file_name in pdf_file_names:
+            pdf_file_name += ' '
+        pdf_file_names.append(pdf_file_name)
         # Check if the current page contains multiple pages
         if page_count and page_count > 1:
             if multi_page_scope < i:
