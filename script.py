@@ -41,7 +41,6 @@ def get_file_name(invoice_type, image_path):
     try_count = 1
     retry_max = 3
     additional_black_threshold = 0
-
     if invoice_type == NAPA_MOTOR_PARTS:
         retry_max = 10
         width, height = (2550, 3300)
@@ -93,16 +92,17 @@ def get_file_name(invoice_type, image_path):
                                 total_txt = clean_total(text, is_credit_memo)
                                 break
         else:
-            po_identifier = 'Cust. PO#'
-            total_identifier = 'INVOICE TOTAL'
+            po_identifier1 = 'Cust. PO#'
+            po_identifier2 = 'Customer PO No'
+            po_identifier3 = 'i Cust PON A it Ni'
+            total_identifiers = ['INVOICE TOTAL', 'Invoice Amount:']
             texts = extracted_text.split('\n')
             for idx, text in enumerate(texts):
                 if not text:
                     continue
-                # print(idx, text)
                 split_text = text.split('/')
-                if po_identifier in text and not po_txt:
-                    po_txt = clean_po_num(texts[idx + 4])
+                if (po_identifier1 in text or po_identifier2 in text or po_identifier3 in text) and not po_txt:
+                    po_txt = clean_po_num(texts[idx + 9], FACTORY_MOTOR_PARTS)
                     if not po_txt:
                         for i in range(1, 3):
                             try:
@@ -110,19 +110,31 @@ def get_file_name(invoice_type, image_path):
                                 if next_text.replace(' ', '').isalpha():
                                     po_txt = next_text
                                 else:
-                                    po_txt = next_text.split(' ')[-2]
+                                    next_text_split = next_text.split(' ')
+                                    if len(next_text_split) == 1:
+                                        po_txt = next_text_split[0]
+                                    else:
+                                        po_txt = next_text_split[-2]
                                     if po_txt:
-                                        po_txt = clean_po_num(po_txt)
+                                        po_txt = clean_po_num(po_txt, FACTORY_MOTOR_PARTS)
+                                if not po_txt:
+                                    continue
                                 break
                             except IndexError:
                                 continue
                 elif idx <= 45 and len(split_text) == 3 and not date_txt:
                     date_txt = clean_date(split_text, invoice_type)
-                elif total_identifier in text and not total_txt:
-                    is_credit_memo = bool(not total_txt.startswith('-'))
-                    total_txt = clean_total(text, is_credit_memo)
+                else:
+                    for identifier in total_identifiers:
+                        if identifier in text and not total_txt:
+                            total_txt = clean_total(text)
+                            break
 
-        print(f'Retry: {try_count}/{retry_max}', 'Details:', po_txt, date_txt, total_txt, last_page_txt)
+        print(f'Retry: {try_count-1}/{retry_max-1}')
+        print(f'PO #: {po_txt}')
+        print(f'Date: {date_txt}')
+        print(f'Total: {total_txt}')
+        print(f'Last Page: {last_page_txt}')
         print('------------------------------------------------------')
         if po_txt and date_txt and total_txt:
             total_txt = f'${total_txt}'
@@ -132,7 +144,7 @@ def get_file_name(invoice_type, image_path):
         elif try_count == retry_max:
             return False, last_page_txt, f'{po_txt} - {date_txt} - {total_txt}'
         else:
-            additional_black_threshold += 10
+            additional_black_threshold += 10 if invoice_type == NAPA_MOTOR_PARTS else 4
             try_count += 1
 
 
@@ -166,6 +178,8 @@ def split_pdf(invoice_type, file_path, store_path, signals):
     pdf_file_names = list()
     for i in range(main_pdf.numPages):
         page_num = i + 1
+        # if page_num != 3:
+        #     continue
         output = PdfFileWriter()
         # check if the current page is the last page of multiple page and combine the previous pdf
         if multi_page_scope == i and multi_page_idx:
@@ -181,6 +195,7 @@ def split_pdf(invoice_type, file_path, store_path, signals):
             output.write(out)
 
         image_file_path = convert_pdf_to_image(pdf_file_path, image_path)
+        print(f'Page Number: {page_num}')
         is_success, page_count, pdf_file_name = get_file_name(invoice_type, image_file_path)
         while pdf_file_name in pdf_file_names:
             pdf_file_name += ' '
@@ -197,6 +212,7 @@ def split_pdf(invoice_type, file_path, store_path, signals):
         multi_page_idx = list()
 
         if is_success:
+            print(f'Page Number: {page_num} SUCCESS!')
             os.makedirs(correct_named_path, exist_ok=True)
             move_dir = os.path.join(correct_named_path, f'{pdf_file_name}.pdf')
         else:

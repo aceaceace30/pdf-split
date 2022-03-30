@@ -1,6 +1,6 @@
 import re
 
-from settings import NAPA_MOTOR_PARTS
+from settings import NAPA_MOTOR_PARTS, FACTORY_MOTOR_PARTS
 
 
 def clean_total(text, is_credit_memo=False):
@@ -9,13 +9,13 @@ def clean_total(text, is_credit_memo=False):
     - text is not less than 2
     - text does not start with `.`
     """
-    total_txt = re.sub("[^0-9.]", '', text)
+    total_txt = re.sub("[^0-9.-]", '', text)
     if total_txt == '' or len(total_txt) <= 2 or total_txt.startswith('.') or total_txt.endswith('.'):
         return ''
     elif '.' in total_txt:
         # print('Total', total_txt)
         if is_credit_memo or total_txt.startswith('-'):
-            total_txt = f'{total_txt} - REFUND'
+            total_txt = f'{total_txt.replace("-", "")} - REFUND'
         return total_txt
     return ''
 
@@ -42,11 +42,11 @@ def clean_date(text, invoice_type):
     return ''
 
 
-def clean_po_num(text):
+def clean_po_num(text, invoice_type=NAPA_MOTOR_PARTS):
     """Cleans the PO # text"""
     if text and len(text) > 2:
         if text.replace(' ', '').isalpha():  # Check if all are letters
-            return text
+            return text if invoice_type == NAPA_MOTOR_PARTS else ''
         elif text.isalnum():  # Check if it is combination of letters and numbers
             # Check if the 1st two characters are both letter
             first_two = text[:2]
