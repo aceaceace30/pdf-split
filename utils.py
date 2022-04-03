@@ -24,6 +24,8 @@ def clean_date(text, invoice_type):
     """Cleans the date text and follow the format of `YYYY-MM-DDDD`"""
     if invoice_type == NAPA_MOTOR_PARTS:
         date_txt = re.sub('[^0-9/]', '', text)
+        if date_txt == '':
+            return ''
         date_txt = date_txt.replace('/', '-')
         strip_txt = date_txt.split('-')
         month, day, year = strip_txt
