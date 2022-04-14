@@ -1,6 +1,6 @@
 import re
 
-from settings import NAPA_MOTOR_PARTS, FACTORY_MOTOR_PARTS
+from settings import NAPA_MOTOR_PARTS
 
 
 def clean_total(text, is_credit_memo=False):
@@ -23,12 +23,18 @@ def clean_total(text, is_credit_memo=False):
 def clean_date(text, invoice_type):
     """Cleans the date text and follow the format of `YYYY-MM-DDDD`"""
     if invoice_type == NAPA_MOTOR_PARTS:
+        print(text)
         date_txt = re.sub('[^0-9/]', '', text)
+        print(date_txt)
         if date_txt == '':
             return ''
         date_txt = date_txt.replace('/', '-')
         strip_txt = date_txt.split('-')
-        month, day, year = strip_txt
+        try:
+            month, day, year = strip_txt
+        except ValueError:
+            # If the strip_text has is missing any of month day or year. eg. `04-09`
+            return ''
         if len(strip_txt) == 3 and len(month) == 2 and len(day) == 2 and len(year) == 4:
             if int(month) <= 12 and int(day) <= 31:
                 return f'{year}-{month}-{day}'
@@ -50,9 +56,14 @@ def clean_po_num(text, invoice_type=NAPA_MOTOR_PARTS):
         if text.replace(' ', '').isalpha():  # Check if all are letters
             return text if invoice_type == NAPA_MOTOR_PARTS else ''
         elif text.isalnum():  # Check if it is combination of letters and numbers
+            # Check if the 1st three characters are all letters for NAPA, flag it as error
+            # since the usual format should be `WC8121`
+            first_three = text[:3]
+            if first_three.isalpha() and invoice_type == NAPA_MOTOR_PARTS:
+                return ''
             # Check if the 1st two characters are both letter
             first_two = text[:2]
-            if not first_two.isalnum():
+            if not first_two.isalpha():
                 return ''
             # Check if the next item after a number is not number flag it as error
             digit_occurred = False

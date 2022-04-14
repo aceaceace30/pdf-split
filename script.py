@@ -42,6 +42,8 @@ def get_file_name(invoice_type, image_path):
     retry_max = 3
     additional_black_threshold = 0
     if invoice_type == NAPA_MOTOR_PARTS:
+        # We need to define different width and height here to make the reading more accurate
+        # also we define higher retry because this is more harder to read than the FMP files
         retry_max = 10
         width, height = (2550, 3300)
         img = cv2.resize(img, (width, height))
@@ -55,22 +57,24 @@ def get_file_name(invoice_type, image_path):
             date_identifier = 'Date:'
             total_identifiers = ['Memo', 'Sale', 'Subtotal', 'Total']
             page_identifier = 'Page:'
-            is_credit_memo = False
+            is_credit_memo = False  # If this is True it will append the text `REFUND` at the end of file name
             identifiers = [po_identifier, date_identifier, page_identifier] + total_identifiers
 
             texts = list()
             for idx, t in enumerate(extracted_text):
                 strip_text = t.strip()
+                # Check if the text is Credit and the next is Memo to flag it as credit memo
                 if is_credit_memo is False and strip_text == 'Credit':
                     if extracted_text[idx+1] == 'Memo':
                         is_credit_memo = True
                 if strip_text and strip_text in identifiers:
+                    # TODO: Add comments to explain details here
                     try:
                         next_text = extracted_text[idx+1].strip()
                     except IndexError:
                         next_text = ''
                     try:
-                        next_text2 = extracted_text[idx + 2].strip()
+                        next_text2 = extracted_text[idx+2].strip()
                     except IndexError:
                         next_text2 = ''
                     combined_text = f'{strip_text + next_text}'
@@ -102,7 +106,8 @@ def get_file_name(invoice_type, image_path):
                     continue
                 split_text = text.split('/')
                 if (po_identifier1 in text or po_identifier2 in text or po_identifier3 in text) and not po_txt:
-                    po_txt = clean_po_num(texts[idx + 9], FACTORY_MOTOR_PARTS)
+                    # TODO: Add comments to explain details here
+                    po_txt = clean_po_num(texts[idx+9], FACTORY_MOTOR_PARTS)
                     if not po_txt:
                         for i in range(1, 3):
                             try:

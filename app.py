@@ -20,10 +20,10 @@ class MainForm(QtWidgets.QWidget):
 
         self.folder_path = QtWidgets.QLineEdit("Folder location where to read pdf files")
         self.folder_path.setEnabled(False)
-        #self.folder_path.setFixedWidth(250)
+        # self.folder_path.setFixedWidth(250)
         self.store_path = QtWidgets.QLineEdit("Folder location where to store split files")
         self.store_path.setEnabled(False)
-        #self.store_path.setFixedWidth(250)
+        # self.store_path.setFixedWidth(250)
 
         self.start_button = QtWidgets.QPushButton("Start")
         self.progress = QtWidgets.QStatusBar(self)
