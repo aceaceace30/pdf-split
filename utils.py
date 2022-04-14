@@ -23,9 +23,7 @@ def clean_total(text, is_credit_memo=False):
 def clean_date(text, invoice_type):
     """Cleans the date text and follow the format of `YYYY-MM-DDDD`"""
     if invoice_type == NAPA_MOTOR_PARTS:
-        print(text)
         date_txt = re.sub('[^0-9/]', '', text)
-        print(date_txt)
         if date_txt == '':
             return ''
         date_txt = date_txt.replace('/', '-')
@@ -33,7 +31,7 @@ def clean_date(text, invoice_type):
         try:
             month, day, year = strip_txt
         except ValueError:
-            # If the strip_text has is missing any of month day or year. eg. `04-09`
+            # If the strip_text is missing any from the month day or year. eg. `04-09`
             return ''
         if len(strip_txt) == 3 and len(month) == 2 and len(day) == 2 and len(year) == 4:
             if int(month) <= 12 and int(day) <= 31:
