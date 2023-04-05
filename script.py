@@ -63,7 +63,7 @@ def get_file_name(invoice_type, image_path):
             texts = list()
             for idx, t in enumerate(extracted_text):
                 strip_text = t.strip()
-                # Check if the text is Credit and the next is Memo to flag it as credit memo
+                # Check if the text is Credit and next is Memo to flag it as credit memo
                 if is_credit_memo is False and strip_text == 'Credit':
                     if extracted_text[idx+1] == 'Memo':
                         is_credit_memo = True

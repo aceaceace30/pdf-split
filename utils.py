@@ -51,6 +51,11 @@ def clean_date(text, invoice_type):
 def clean_po_num(text, invoice_type=NAPA_MOTOR_PARTS):
     """Cleans the PO # text"""
     if text and len(text) > 2:
+
+        # To handle the updated format of NAPA where we read it as `PO#:RC11682 9000037390356496`
+        if len(text) >= 9 and ' ' in text and invoice_type == NAPA_MOTOR_PARTS:
+            text = text.split(' ')[0]
+
         if text.replace(' ', '').isalpha():  # Check if all are letters
             return text if invoice_type == NAPA_MOTOR_PARTS else ''
         elif text.isalnum():  # Check if it is combination of letters and numbers
