@@ -45,7 +45,7 @@ def get_file_name(invoice_type, image_path):
         # We need to define different width and height here to make the reading more accurate
         # also we define higher retry because this is more harder to read than the FMP files
         retry_max = 10
-        width, height = (2550, 3300)
+        width, height = (1400, 2500)
         img = cv2.resize(img, (width, height))
 
     po_txt, date_txt, total_txt, last_page_txt = '', '', '', ''
@@ -59,7 +59,7 @@ def get_file_name(invoice_type, image_path):
             page_identifier = 'Page:'
             is_credit_memo = False  # If this is True it will append the text `REFUND` at the end of file name
             identifiers = [po_identifier, date_identifier, page_identifier] + total_identifiers
-
+            # print(extracted_text)
             texts = list()
             for idx, t in enumerate(extracted_text):
                 strip_text = t.strip()
@@ -146,6 +146,8 @@ def get_file_name(invoice_type, image_path):
             if ' ' in po_txt:
                 po_txt = po_txt.title().replace(' ', '')
             return True, 1, f'{po_txt} - {date_txt} - {total_txt}'
+        elif po_txt and date_txt and last_page_txt and last_page_txt > 1:
+            return False, last_page_txt, f'{po_txt} - {date_txt} - {total_txt}'
         elif try_count == retry_max:
             return False, last_page_txt, f'{po_txt} - {date_txt} - {total_txt}'
         else:
@@ -183,11 +185,12 @@ def split_pdf(invoice_type, file_path, store_path, signals):
     pdf_file_names = list()
     for i in range(main_pdf.numPages):
         page_num = i + 1
-        # if page_num != 3:
+        # if page_num not in [114, 115, 116]:
         #     continue
         output = PdfFileWriter()
+
         # check if the current page is the last page of multiple page and combine the previous pdf
-        if multi_page_scope == i and multi_page_idx:
+        if multi_page_scope == page_num and multi_page_idx:
             for item in multi_page_idx:
                 included_pdf = os.path.join(holder_folder_path, f'page{item+1}.pdf')
                 multi_pdf = PdfFileReader(open(included_pdf, 'rb'))
@@ -207,10 +210,13 @@ def split_pdf(invoice_type, file_path, store_path, signals):
         pdf_file_names.append(pdf_file_name)
         # Check if the current page contains multiple pages
         if page_count and page_count > 1:
-            if multi_page_scope < i:
-                multi_page_scope = i + page_count - 1
-                multi_page_idx.append(i)
+            # Skip updating the multi_page_scope if index is included in multi page
+            if i in multi_page_idx and multi_page_scope > page_num:
                 continue
+            multi_page_scope = i + page_count
+            for pc in range(page_count-1):
+                multi_page_idx.append(i+pc)
+            continue
 
         # Set to 0 if page count is only 1 or the index already hit the last page of multiple page
         multi_page_scope = 0
